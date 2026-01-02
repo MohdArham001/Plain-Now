@@ -1,9 +1,11 @@
 export enum ViewState {
-  LANDING = 'LANDING',
-  INPUT = 'INPUT',
-  RESULTS = 'RESULTS',
-  HOW_IT_WORKS = 'HOW_IT_WORKS'
+  LANDING,
+  HOW_IT_WORKS,
+  INPUT,
+  RESULTS,
+  AUTH, // 👈 add this
 }
+
 
 export enum ExplanationStyle {
   SIMPLE_30_SEC = '30_second_summary',

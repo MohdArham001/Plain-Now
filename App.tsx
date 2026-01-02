@@ -1,98 +1,96 @@
-import React, { useState, useEffect } from 'react';
-import { Layout } from './components/Layout';
-import { Landing } from './views/Landing';
-import { DocumentInput } from './views/DocumentInput';
-import { Results } from './views/Results';
-import { HowItWorks } from './views/HowItWorks';
-import { ViewState, AnalysisResult, DocumentInputState } from './types';
-import { analyzeDocument } from './services/geminiService';
-
-
-type Todo = {
-  id: number;
-  title: string;
-};
+import React, { useEffect, useState } from "react";
+import { Layout } from "./components/Layout";
+import { Landing } from "./views/Landing";
+import { DocumentInput } from "./views/DocumentInput";
+import { Results } from "./views/Results";
+import { HowItWorks } from "./views/HowItWorks";
+import { Auth } from "./views/Auth";
+import {
+  ViewState,
+  AnalysisResult,
+  DocumentInputState,
+} from "./types";
+import { analyzeDocument } from "./services/geminiService";
+import { supabase } from "./services/supabase";
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewState>(ViewState.LANDING);
+  const [user, setUser] = useState<any>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [currentView, setCurrentView] = useState<ViewState>(
+    ViewState.LANDING
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] =
+    useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔹 Supabase debug state
-  const [supabaseStatus, setSupabaseStatus] = useState<string>("Checking Supabase…");
-
-  // 🔹 SAFE Supabase test (no crash possible)
+  // 🔐 AUTH BOOTSTRAP (FIXED)
   useEffect(() => {
-    const testSupabase = async () => {
-      try {
-        const { supabase } = await import("./services/supabase");
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setCheckingAuth(false);
+    });
 
-        const { data, error } = await supabase
-          .from("todos")
-          .select("id")
-          .limit(1);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+    });
 
-        if (error) {
-          setSupabaseStatus(`Supabase error: ${error.message}`);
-        } else {
-          setSupabaseStatus("Supabase connected ✅");
-          console.log("Supabase data:", data);
-        }
-      } catch (err: any) {
-        console.error("Supabase crash:", err);
-        setSupabaseStatus("Supabase failed to initialize ❌ (check .env)");
-      }
-    };
-
-    testSupabase();
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleStart = () => {
+    if (!user) {
+      setCurrentView(ViewState.AUTH);
+      return;
+    }
     setCurrentView(ViewState.INPUT);
-    setAnalysisResult(null);
-    setError(null);
   };
 
-  const handleDocumentSubmit = async (input: DocumentInputState) => {
+  const handleDocumentSubmit = async (
+    input: DocumentInputState
+  ) => {
     setIsLoading(true);
     setError(null);
-    try {
-      let mimeType = null;
-      if (input.file) {
-        mimeType = input.file.type;
-      }
 
+    try {
       const result = await analyzeDocument(
         input.text,
         input.fileBase64,
-        mimeType,
+        input.file?.type ?? null,
         input.style
       );
 
       setAnalysisResult(result);
       setCurrentView(ViewState.RESULTS);
     } catch (err: any) {
-      console.error("Submit Error:", err);
-      setError(err.message || "An unexpected error occurred. Please try again.");
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetFlow = () => {
-    setAnalysisResult(null);
-    setError(null);
-    setCurrentView(ViewState.INPUT);
-  };
-
   const renderView = () => {
     switch (currentView) {
       case ViewState.LANDING:
-        return <Landing onStart={handleStart} onHowItWorks={() => setCurrentView(ViewState.HOW_IT_WORKS)} />;
+        return (
+          <Landing
+            onStart={handleStart}
+            onHowItWorks={() =>
+              setCurrentView(ViewState.HOW_IT_WORKS)
+            }
+          />
+        );
+
       case ViewState.HOW_IT_WORKS:
         return <HowItWorks onStart={handleStart} />;
+
+      case ViewState.AUTH:
+        return <Auth />;
+
       case ViewState.INPUT:
+        if (!user) return <Auth />;
         return (
           <DocumentInput
             isLoading={isLoading}
@@ -100,16 +98,23 @@ const App: React.FC = () => {
             error={error}
           />
         );
+
       case ViewState.RESULTS:
         return analysisResult ? (
-          <Results result={analysisResult} onReset={resetFlow} />
-        ) : (
-          <div className="flex justify-center p-20">No result data found.</div>
-        );
+          <Results
+            result={analysisResult}
+            onReset={() => setCurrentView(ViewState.INPUT)}
+          />
+        ) : null;
+
       default:
-        return <Landing onStart={handleStart} onHowItWorks={() => setCurrentView(ViewState.HOW_IT_WORKS)} />;
+        return null;
     }
   };
+
+  if (checkingAuth) {
+    return <div className="p-10 text-center">Loading…</div>;
+  }
 
   return (
     <Layout currentView={currentView} onChangeView={setCurrentView}>

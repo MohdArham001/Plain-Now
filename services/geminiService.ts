@@ -1,42 +1,28 @@
-import { AnalysisResult, ExplanationStyle } from "../types";
+import { supabase } from "./supabase";
+import { AnalysisResult } from "../types";
 
-// NOTE: Schema is now enforced on the backend (Edge Function)
 export const analyzeDocument = async (
   text: string,
-  base64Image: string | null,
-  mimeType: string | null,
-  style: ExplanationStyle
+  fileBase64?: string | null,
+  fileType?: string | null,
+  style?: string
 ): Promise<AnalysisResult> => {
-  try {
-    const response = await fetch(
-      "https://xdmwfurksducxjggfgt.supabase.co/functions/v1/analyze-document",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          text,
-          base64Image,
-          mimeType,
-          style,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`AI request failed: ${errText}`);
+  const { data, error } = await supabase.functions.invoke(
+    "analyze-document",
+    {
+      body: { 
+        text,
+        fileBase64,
+        fileType,
+        style
+      },
     }
+  );
 
-    const data = await response.json();
-    return data as AnalysisResult;
-
-  } catch (error: any) {
-    console.error("Secure Gemini Analysis Error:", error);
-    throw new Error(
-      error.message || "Failed to analyze document. Please try again."
-    );
+  if (error) {
+    console.error("Edge error:", error);
+    throw new Error(error.message || "Failed to analyze document");
   }
+
+  return data.result;
 };

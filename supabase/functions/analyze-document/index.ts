@@ -1,59 +1,137 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
 
-// Setup type definitions for built-in Supabase Runtime APIs
-// Setup type definitions for Supabase Edge Runtime
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 serve(async (req) => {
-  if (req.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+  // 1. Handle CORS Preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { text } = await req.json();
-
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      return new Response("Missing API key", { status: 500 });
+    // 2. Validate Request Body
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text }] }],
-        }),
-      }
-    );
+    const { text, fileBase64, fileType, style } = body;
 
-    const data = await response.json();
+    // 3. Check for Gemini API Key
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiKey) {
+      console.error("Missing GEMINI_API_KEY");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error: Missing API Key" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    return new Response(JSON.stringify(data), {
+    // 4. Construct Gemini Prompt
+    const promptText = text || "Analyze this document and provide key insights.";
+    
+    // Define the required JSON structure in the prompt
+    let finalPrompt = `${promptText}
+
+    You are an expert risk analyst. Analyze the provided content.
+    Return ONLY a raw JSON object with no markdown formatting. The JSON must follow this schema:
+    {
+      "meaning": "Clear explanation of what the document says (string)",
+      "actions": ["Actionable step 1", "Actionable step 2"] (array of strings),
+      "riskLevel": "Low" | "Medium" | "High" (string enum),
+      "riskReason": "Why this risk level was assigned (string)"
+    }`;
+
+    if (style) {
+      finalPrompt += `\n\nStyle: ${style}`;
+    }
+
+    const parts: any[] = [];
+    
+    // Add file if present (Multimodal)
+    if (fileBase64 && fileType) {
+      parts.push({
+        inlineData: {
+          mimeType: fileType,
+          data: fileBase64
+        }
+      });
+    }
+    
+    // Add text prompt
+    parts.push({ text: finalPrompt });
+
+    // 5. Call Gemini API
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`;
+    
+    console.log("Calling Gemini API with JSON instruction...");
+    const geminiResponse = await fetch(apiUrl, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: parts }],
+        generationConfig: {
+            responseMimeType: "application/json"
+        }
+      }),
     });
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Internal Server Error" }),
-      { status: 500 }
-    );
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error("Gemini API Error:", errorText);
+      return new Response(
+        JSON.stringify({ error: "AI Service Error", details: errorText }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const geminiData = await geminiResponse.json();
+    const resultText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!resultText) {
+      console.error("Unexpected Gemini response structure:", JSON.stringify(geminiData));
+      return new Response(
+        JSON.stringify({ error: "Failed to generate response from AI" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Parse the JSON result from the AI
+    let parsedResult;
+    try {
+        parsedResult = JSON.parse(resultText);
+    } catch (e) {
+        console.error("Failed to parse AI JSON response:", resultText);
+         // Fallback or returned error
+         parsedResult = {
+             meaning: resultText,
+             actions: [],
+             riskLevel: "Unknown",
+             riskReason: "Failed to parse structured output"
+         }
+    }
+
+    // 6. Return Success Response
+    return new Response(JSON.stringify({ result: parsedResult }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  } catch (err: any) {
+    console.error("Edge Function Exception:", err);
+    return new Response(JSON.stringify({ error: err.message || "Internal Server Error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
-
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/analyze-document' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/
