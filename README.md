@@ -1,20 +1,19 @@
-# PlainNow - Android App & Backend
+# PlainNow - Web App & Backend
 
-Fully rebuilt with React Native (Expo) and Node.js (Fastify + PostgreSQL).
+Fully rebuilt with React Web (Vite + TailwindCSS) and Node.js (Fastify + Prisma + PostgreSQL).
 
 ## Project Structure
-- `mobile/`: Android Application (React Native + NativeWind)
-- `backend/`: API Server (Fastify + Prisma + PostgreSQL)
+- `web/`: Web Application (React Web + Vite + TailwindCSS)
+- `backend/`: API Server (Node.js + Fastify + Prisma + PostgreSQL)
 
 ## Setup Instructions
 
 ### 1. Prerequisites
 - Docker Desktop (Running)
-- Node.js (v18+)
-- Android Emulator (via Android Studio)
+- Node.js (v18+) 
 
 ### 2. Backend Setup
-The backend handles authentication and document analysis.
+    The backend handles authentication and document analysis.
 
 ```powershell
 cd backend
@@ -32,19 +31,16 @@ npm run dev
 ```
 Server runs at: `http://localhost:3000`
 
-### 3. Mobile Setup
-The frontend is a React Native app.
+### 3. WEB Setup
+    The frontend is a React Web app.
 
 ```powershell
-cd mobile
+cd web
 # 1. Install dependencies (Wait for initial install to finish first!)
 npm install
 
-# 2. Install UI libraries (Run this script)
-./setup_deps.ps1
-
-# 3. Start Android App
-npx expo start --android
+# 2. Start Web App
+npm run dev 
 ```
 
 ## Features
