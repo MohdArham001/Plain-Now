@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  credits    Int      @default(5)
+  lastRefill DateTime @default(now())
+  documents  Document[]
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  filename  String
+  type      String
+  size      Int
+  // We'll store file path or S3 URL in a real app, 
+  // but for local we might store base64 or text if small.
+  // For this demo, let's assume we analyze text or keep it simple.
+  content   String? 
+  createdAt DateTime @default(now())
+  analysis  AnalysisResult?
+}
+
+model AnalysisResult {
+  id         String   @id @default(uuid())
+  documentId String   @unique
+  document   Document @relation(fields: [documentId], references: [id])
+  meaning    String
+  actions    String[]
+  riskLevel  String
+  riskReason String
+  createdAt  DateTime @default(now())
+}
