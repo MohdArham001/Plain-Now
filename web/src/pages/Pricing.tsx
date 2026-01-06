@@ -9,19 +9,27 @@ export default function Pricing() {
         <div className="min-h-screen bg-white font-sans text-slate-900">
             {/* Header */}
             <header className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                        <span className="text-gray-500 hover:text-indigo-600 font-medium flex items-center gap-1">
-                            &larr; Back
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-                        <div className="bg-indigo-600 p-2 rounded-lg">
-                            <FileText className="w-6 h-6 text-white" />
+                <div className="max-w-7xl mx-auto px-4 md:px-6 h-auto md:h-20 flex flex-col md:flex-row items-center justify-between py-4 md:py-0 gap-4">
+                    <div className="w-full md:w-auto flex items-center justify-between">
+                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+                            <span className="text-gray-500 hover:text-indigo-600 font-medium flex items-center gap-1 text-sm md:text-base">
+                                &larr; Back
+                            </span>
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-gray-900">PlainNow</span>
+
+                        <div className="flex items-center gap-2 cursor-pointer md:absolute md:left-1/2 md:-translate-x-1/2" onClick={() => navigate('/')}>
+                            <div className="bg-indigo-600 p-1.5 md:p-2 rounded-lg">
+                                <FileText className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                            </div>
+                            <span className="text-lg md:text-xl font-bold tracking-tight text-gray-900">PlainNow</span>
+                        </div>
+
+                        <div className="flex md:hidden items-center gap-4">
+                            {/* Mobile Header Actions could go here */}
+                        </div>
                     </div>
-                    <div className="flex items-center gap-4">
+
+                    <div className="hidden md:flex items-center gap-4">
                         <button onClick={() => navigate('/auth')} className="text-sm font-semibold text-gray-600 hover:text-gray-900">Login</button>
                         <button
                             onClick={() => navigate('/auth')}
