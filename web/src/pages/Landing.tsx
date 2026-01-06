@@ -1,11 +1,13 @@
 
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, ArrowRight, Shield, Lock, Trash2, PlayCircle } from 'lucide-react';
+import { FileText, ArrowRight, Shield, Lock, Trash2, PlayCircle, Menu, X } from 'lucide-react';
+import { useState } from 'react';
 
 export default function Landing() {
     const navigate = useNavigate();
     const isLoggedIn = !!localStorage.getItem('token');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleStart = () => {
         if (isLoggedIn) {
@@ -32,15 +34,41 @@ export default function Landing() {
                             </div>
                             <span className="text-xl font-bold tracking-tight text-gray-900">PlainNow</span>
                         </div>
-                        {/* Mobile Menu Button can go here if needed, for now we stack simpler */}
+
+                        {/* Mobile Menu Button */}
+                        <button
+                            className="md:hidden p-2 text-gray-600"
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        >
+                            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        </button>
                     </div>
 
-                    <nav className="hidden md:flex items-center gap-8">
+                    <nav className={`${isMenuOpen ? 'flex' : 'hidden'} md:flex flex-col md:flex-row items-center gap-4 md:gap-8 w-full md:w-auto mt-4 md:mt-0 transition-all`}>
                         <a href="#" className="text-sm font-medium text-gray-600 hover:text-indigo-600" onClick={() => navigate('/')}>Home</a>
                         <a href="#" className="text-sm font-medium text-gray-600 hover:text-indigo-600" onClick={() => navigate('/how-it-works')}>How it Works</a>
                         <a href="#" className="text-sm font-medium text-gray-600 hover:text-indigo-600" onClick={() => navigate('/pricing')}>Pricing</a>
+
+                        {/* Mobile Buttons (Visible only inside mobile menu) */}
+                        <div className="flex md:hidden flex-col w-full gap-2 mt-2">
+                            <button
+                                onClick={handleStart}
+                                className="bg-gray-900 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-gray-800 transition-all w-full"
+                            >
+                                {isLoggedIn ? 'Dashboard' : 'Start Free'}
+                            </button>
+                            {!isLoggedIn && (
+                                <button
+                                    onClick={() => navigate('/auth')}
+                                    className="px-5 py-2.5 rounded-full text-sm font-semibold text-gray-600 bg-gray-50 border border-gray-200 w-full"
+                                >
+                                    Login
+                                </button>
+                            )}
+                        </div>
                     </nav>
 
+                    {/* Desktop Buttons (Hidden on Mobile) */}
                     <div className="hidden md:flex items-center gap-4">
                         <button
                             onClick={handleStart}
