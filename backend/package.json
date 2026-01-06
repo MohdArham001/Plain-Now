@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/app.ts",
     "build": "prisma generate && tsc",
-    "start": "node dist/app.js",
+    "start": "prisma generate && node dist/app.js",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1"
