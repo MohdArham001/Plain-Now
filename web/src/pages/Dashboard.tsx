@@ -3,7 +3,10 @@ import { FileText, Upload, CheckCircle, AlertTriangle, ShieldCheck, Loader2 } fr
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
-const API_URL = '/api'; // Proxy configured
+import { API_BASE_URL } from '../config';
+
+const API_URL = API_BASE_URL + '/api';
+
 
 interface AnalysisResult {
     riskLevel: 'High' | 'Medium' | 'Low';
@@ -32,7 +35,7 @@ export default function Dashboard() {
         });
     };
 
-    const handleAnalyze = async (e: any) => {
+    const handleAnalyze = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
             toast.error("You must be logged in to analyze documents.");
@@ -223,7 +226,7 @@ export default function Dashboard() {
                                     </div>
                                     {!result && (
                                         <button
-                                            onClick={() => handleAnalyze(null)}
+                                            onClick={() => handleAnalyze()}
                                             disabled={loading}
                                             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
                                         >
@@ -267,7 +270,7 @@ export default function Dashboard() {
                                     onChange={(e) => setTextInput(e.target.value)}
                                 ></textarea>
                                 <button
-                                    onClick={() => handleAnalyze(null)}
+                                    onClick={() => handleAnalyze()}
                                     disabled={loading || !textInput.trim()}
                                     className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
                                 >

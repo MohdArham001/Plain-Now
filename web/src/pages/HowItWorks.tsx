@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { Upload, Cpu, CheckCircle, ArrowRight, FileText } from 'lucide-react';
 
@@ -77,17 +77,17 @@ export default function HowItWorks() {
                                 <div className={`aspect-video rounded-2xl ${step.color} border border-gray-100 flex items-center justify-center relative overflow-hidden group hover:shadow-lg transition-shadow`}>
                                     {/* Placeholder for Screenshot */}
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                       <img 
-                                            src={step.image} 
+                                        <img
+                                            src={step.image}
                                             alt={step.title}
                                             className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
-                                       />
+                                        />
                                     </div>
                                     {/* Overlay for icon */}
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                         <div className="bg-white/80 p-4 rounded-full shadow-lg backdrop-blur-sm">
+                                        <div className="bg-white/80 p-4 rounded-full shadow-lg backdrop-blur-sm">
                                             {step.icon}
-                                         </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

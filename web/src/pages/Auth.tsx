@@ -4,7 +4,10 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-const API_URL = '/auth'; // Proxy configured in vite.config.ts
+import { API_BASE_URL } from '../config';
+
+const API_URL = API_BASE_URL + '/auth';
+
 
 export default function AuthPage() {
     const [isLogin, setIsLogin] = useState(true);
